@@ -249,7 +249,8 @@
         index = data.length - 1;
 
         um.onAdd.dispatch(um, level);
-        editor.isNotDirty = 0;
+        
+        editor.setDirty(true);
 
         return level;
       },

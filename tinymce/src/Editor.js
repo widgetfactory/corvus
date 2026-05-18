@@ -10,7 +10,7 @@
 
 
 (function (tinymce) {
-  
+
   // Shorten these names
   var DOM = tinymce.DOM,
     Event = tinymce.dom.Event,
@@ -417,8 +417,7 @@
         }
       }
 
-
-      function initPlugin(p) {                
+      function initPlugin(p) {
         var c = PluginManager.get(p),
           u = PluginManager.urls[p] || tinymce.documentBaseURL.replace(/\/$/, ''),
           po;
@@ -460,6 +459,8 @@
 
       // Enables users to override the control factory
       self.onBeforeRenderUI.dispatch(self, self.controlManager);
+
+      this.setDirty(false);
 
       // Measure box
       if (s.render_ui && self.theme) {
@@ -1723,6 +1724,10 @@
 
       o.element = e = null;
 
+      if (o.set_dirty !== false) {
+        self.setDirty(false);
+      }
+
       return h;
     },
 
@@ -1878,6 +1883,10 @@
       return args.content;
     },
 
+    setDirty: function (state) {
+      this.isNotDirty = !state;
+    },
+
     /**
      * Returns true/false if the editor is dirty or not. It will get dirty if the user has made modifications to the contents.
      *
@@ -1888,11 +1897,7 @@
      *     alert("You must save your contents.");
      */
     isDirty: function () {
-      var self = this;
-
-      return tinymce.trim(self.startContent) !== tinymce.trim(self.getContent({
-        format: 'raw'
-      })) && !self.isNotDirty;
+      return !this.isNotDirty;
     },
 
     /**
