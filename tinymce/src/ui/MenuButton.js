@@ -103,6 +103,7 @@
       m.settings.vp_offset_x = pos.x;
       m.settings.vp_offset_y = pos.y;
       m.settings.keyboard_focus = self._focused;
+      m.settings.trigger = e;
       m.showMenu(0, e.offsetHeight);
 
       Event.add(DOM.doc, 'mousedown', self.hideMenu, self);

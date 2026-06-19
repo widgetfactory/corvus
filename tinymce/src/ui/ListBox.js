@@ -472,6 +472,7 @@
       menu = this.menu;
       menu.settings.offset_x = pos.x;
       menu.settings.offset_y = pos.y;
+      menu.settings.trigger = elm;
 
       if (!this.settings.max_width) {
         menu.settings.max_width = elm.offsetWidth;
@@ -541,8 +542,8 @@
         max_height: this.settings.max_height || '',
         filter: !!this.settings.filter,
         keyboard_focus: true,
-        onselect: function (value) {
-          if (self.settings.onselect(value) !== false) {
+        onselect: function (value, item) {
+          if (self.settings.onselect(value, item) !== false) {
             self.select(value);
             menu.close();
           }
@@ -580,7 +581,7 @@
           item.id = DOM.uniqueId();
           item.role = "option";
           item.onAction = function (e) {
-            if (self.settings.onselect(item.value) !== false) {
+            if (self.settings.onselect(item.value, item) !== false) {
               self.select(item.value);
             }
 

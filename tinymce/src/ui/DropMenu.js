@@ -250,7 +250,7 @@
       var self = this,
         s = self.settings,
         co, vp = DOM.getViewPort(),
-        w, h, mx, my, ot = 0, cp = self.classPrefix;
+        w, h, mx, my, ot = 0, cp = self.classPrefix, trigger = s.trigger;
 
       self.collapse(1);
 
@@ -284,6 +284,16 @@
       x += s.offset_x || 0;
       y += s.offset_y || 0;
 
+      // If a trigger element is set, use getBoundingClientRect for pixel-accurate
+      // document-relative coordinates. The offsetParent loop in DOM.getPos stops at
+      // fixed-position ancestors without adding page scroll, so any page scroll causes
+      // pos.x/pos.y to be short by that amount.
+      if (trigger) {
+        var trigRect = trigger.getBoundingClientRect();
+        x = trigRect.left + vp.x;
+        y = trigRect.bottom + vp.y;
+      }
+
       // Move inside viewport if not submenu
       if (s.constrain) {
         w = co.clientWidth - ot;
@@ -298,6 +308,24 @@
         if ((y + s.vp_offset_y + h) > my) {
           y = py ? py - h - 8 : Math.max(0, (my - s.vp_offset_y) - h);
         }
+      }
+
+      // use fixed positioning if the trigger is inside a modal
+      var modal = document.querySelector('.mceModal');
+
+      if (modal && trigger && modal.contains(trigger)) {
+        var rect = trigger.getBoundingClientRect();
+        x = rect.left;
+        y = rect.bottom;
+
+        if (x + co.clientWidth > vp.w) {
+          x = Math.max(0, rect.right - co.clientWidth);
+        }
+        if (y + co.clientHeight > vp.h) {
+          y = rect.top - co.clientHeight;
+        }
+
+        DOM.setStyle(co, 'position', 'fixed');
       }
 
       DOM.setStyles(co, {
@@ -325,11 +353,11 @@
           }
 
           if (item.settings.onAction) {
-            item.settings.onAction(e);
+            item.settings.onAction(e, item);
           }
 
           if (item.settings.onclick) {
-            var state = item.settings.onclick(e);
+            var state = item.settings.onclick(e, item);
 
             if (state !== false) {
               self.close();
@@ -593,10 +621,10 @@
       return menu;
     },
 
-    selectAndClear: function (value) {
+    selectAndClear: function (value, item) {
       var self = this;
 
-      self.settings.onselect.call(self, value);
+      self.settings.onselect.call(self, value, item);
       self.clearFilterInput();
     },
 
@@ -655,7 +683,7 @@
           item = item || self.items[id];
 
           if (item && item.settings.value) {
-            self.selectAndClear(item.settings.value);
+            self.selectAndClear(item.settings.value, item);
           }
         },
         enableUpDown: true

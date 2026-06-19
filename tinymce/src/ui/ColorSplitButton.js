@@ -77,7 +77,7 @@
 		 */
     showMenu: function () {
       var self = this,
-        elm, pos;
+        elm, rect, vp;
 
       if (this.isDisabled()) {
         return;
@@ -96,11 +96,12 @@
 
       DOM.show(this.id + '_menu');
       DOM.addClass(elm, 'mceSplitButtonSelected');
-      pos = DOM.getPos(elm);
+      rect = elm.getBoundingClientRect();
+      vp = DOM.getViewPort();
 
       DOM.setStyles(this.id + '_menu', {
-        left: pos.x,
-        top: pos.y + elm.firstChild.clientHeight
+        left: vp.x + rect.left,
+        top: vp.y + rect.bottom
       });
 
       elm = 0;
