@@ -137,20 +137,27 @@ import DOMPurify from "dompurify";
 
             // always remove bogus nodes
             if (node.hasAttribute('data-mce-bogus')) {
-                removeNode(node);
+                if (!evt) {
+                    removeNode(node);
+                }
+                // In hook context: omitting allowedTags entry lets DOMPurify
+                // remove the element; FORBID_CONTENTS / KEEP_CONTENT governs children.
                 return;
             }
 
             var rule = schema.getElementRule(tag);
 
             if (settings.validate && !rule) {
-                if (tag in special) {
-                    // Special elements are always removed
-                    removeNode(node);
-                } else {
-                    // unwrap others
-                    removeNode(node, true);
+                if (!evt) {
+                    if (tag in special) {
+                        // Special elements are always removed
+                        removeNode(node);
+                    } else {
+                        // unwrap others
+                        removeNode(node, true);
+                    }
                 }
+                // In hook context: don't set allowedTags — DOMPurify removes the element.
                 return;
             } else {
                 if (evt) {
@@ -184,26 +191,40 @@ import DOMPurify from "dompurify";
                         return node.hasAttribute(attr.name);
                     })
                 ) {
-                    removeNode(node, true);
+                    if (evt) {
+                        evt.allowedTags[tag] = false; // DOMPurify unwraps
+                    } else {
+                        removeNode(node, true);
+                    }
                     return;
                 }
 
                 // Unwrap and remove if all attributes should be stripped and none remain
                 if (rule.removeEmptyAttrs && node.attributes.length === 0) {
-                    removeNode(node, true);
+                    if (evt) {
+                        evt.allowedTags[tag] = false; // DOMPurify unwraps
+                    } else {
+                        removeNode(node, true);
+                    }
                     return;
                 }
 
-                // Rename element if schema defines a different outputName
+                // Rename element if schema defines a different outputName.
+                // In hook context, mark for a post-sanitize pass to avoid interfering
+                // with DOMPurify's live tree walk.
                 if (rule.outputName && rule.outputName !== tag) {
-                    var newNode = document.createElement(rule.outputName);
+                    if (evt) {
+                        node.setAttribute('data-mce-rename', rule.outputName);
+                    } else {
+                        var newNode = document.createElement(rule.outputName);
 
-                    while (node.firstChild) {
-                        newNode.appendChild(node.firstChild);
+                        while (node.firstChild) {
+                            newNode.appendChild(node.firstChild);
+                        }
+
+                        node.parentNode.replaceChild(newNode, node);
+                        node = newNode;
                     }
-
-                    node.parentNode.replaceChild(newNode, node);
-                    node = newNode;
                 }
             }
         }
@@ -275,10 +296,10 @@ import DOMPurify from "dompurify";
                     }
 
                     node.removeAttribute(name);
-                }
-
-                if (isBooleanAttribute(name)) {
-                    node.setAttribute(name, name);
+                } else {
+                    if (isBooleanAttribute(name)) {
+                        node.setAttribute(name, name);
+                    }
                 }
             }
         }
@@ -311,10 +332,6 @@ import DOMPurify from "dompurify";
             if (schema.isValid('script') || schema.isValid('style')) {
                 config.FORCE_BODY = true; // Force body to be present for script/style tags
             }
-
-            each(schema.getValidElements(), function (rule, tag) {
-                config.ALLOWED_TAGS.push(tag);   
-            });
 
             return config;
         }
@@ -363,6 +380,30 @@ import DOMPurify from "dompurify";
             }
 
             purifier.sanitize(body, purifyConfig);
+
+            // Rename elements that were marked by processNode during the hook pass
+            // (replaceChild is deferred to avoid interfering with DOMPurify's tree walk).
+            var toRename = body.querySelectorAll ? body.querySelectorAll('[data-mce-rename]') : [];
+            var r = toRename.length;
+            while (r--) {
+                var orig = toRename[r];
+                var outputName = orig.getAttribute('data-mce-rename');
+                orig.removeAttribute('data-mce-rename');
+                var renamed = document.createElement(outputName);
+                var attrs = orig.attributes;
+
+                for (var a = attrs.length - 1; a >= 0; a--) {
+                    renamed.setAttribute(attrs[a].name, attrs[a].value);
+                }
+
+                while (orig.firstChild) {
+                    renamed.appendChild(orig.firstChild);
+                }
+
+                if (orig.parentNode) {
+                    orig.parentNode.replaceChild(renamed, orig);
+                }
+            }
 
             purifier.removed = [];
 
