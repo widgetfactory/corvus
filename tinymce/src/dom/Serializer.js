@@ -247,10 +247,17 @@
       }
     });
 
+    function isValidProtected(html, protect) {
+      return protect && protect.some(function (pattern) {
+        var m = html.match(pattern);
+        return m !== null && m[0].length === html.length;
+      });
+    }
+
     // Convert comments to cdata and handle protected comments
     htmlParser.addNodeFilter('#comment', function (nodes) {
       var i = nodes.length,
-        node;
+        node, protectedHtml;
 
       while (i--) {
         node = nodes[i];
@@ -260,10 +267,15 @@
           node.type = 4;
           node.value = node.value.replace(/^\[CDATA\[|\]\]$/g, '');
         } else if (node.value.indexOf('mce:protected ') === 0) {
-          node.name = "#text";
-          node.type = 3;
-          node.raw = true;
-          node.value = unescape(node.value).substr(14);
+          protectedHtml = unescape(node.value).substr(14);
+          if (isValidProtected(protectedHtml, settings.protect)) {
+            node.name = "#text";
+            node.type = 3;
+            node.raw = true;
+            node.value = protectedHtml;
+          } else {
+            node.remove();
+          }
         }
       }
     });
