@@ -719,6 +719,14 @@
        */
       self.parser = new tinymce.html.DomParser(settings, self.schema);
 
+      // Strip forged data-mce-src, data-mce-href and data-mce-style on input
+      self.parser.addAttributeFilter('data-mce-src,data-mce-href,data-mce-style', function (nodes, name) {
+        var i = nodes.length;
+        while (i--) {
+          nodes[i].attr(name, null);
+        }
+      });
+
       // Convert src and href into data-mce-src, data-mce-href and data-mce-style
       self.parser.addAttributeFilter('src,href,style', function (nodes, name) {
         var i = nodes.length,
