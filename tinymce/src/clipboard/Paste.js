@@ -327,7 +327,8 @@ function pasteHtml(editor, content, internal, pasteAsPlainText) {
             each(rules, function (s) {
                 // if it is already in Regular Expression format...
                 if (/^\/.*\/(g|i|m)*$/.test(s)) {
-                    re = (new Function('return ' + s))();
+                    var m = s.match(/^\/(.*)\/([gim]*)$/);
+                    re = new RegExp(m[1], m[2] || '');
                     // ...else create expression
                 } else {
                     re = new RegExp(s);
