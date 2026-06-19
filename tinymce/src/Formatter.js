@@ -66,7 +66,7 @@
     var canFormatBR = function (editor, format, node, parentName) {
       // TINY-6483: Can format 'br' if it is contained in a valid empty block and an inline format is being applied
       if (editor.settings.format_empty_lines !== false && format.inline && node.parentNode) {
-        
+
         // allow links to wrap br tags
         if (format.inline == 'a') {
           return true;
@@ -1270,7 +1270,7 @@
      */
     function matchNode(node, name, vars, similar) {
       var formatList = get(name),
-        format, i, classes;
+        format, i;
 
       function matchItems(node, format, item_name) {
         var key, value, items = format[item_name],
@@ -1324,7 +1324,9 @@
           // Name name, attributes, styles and classes
           if (matchName(node, format) && matchItems(node, format, 'attributes') && matchItems(node, format, 'styles')) {
             // Match classes
-            if ((classes = format.classes)) {
+            var classes = format.classes;
+
+            if (classes) {
               for (i = 0; i < classes.length; i++) {
                 if (!dom.hasClass(node, classes[i])) {
                   return;
@@ -1573,12 +1575,12 @@
     function matchName(node, format) {
       // Check for inline match
       if (isEq(node, format.inline)) {
-        return TRUE;
+        return true;
       }
 
       // Check for block match
       if (isEq(node, format.block)) {
-        return TRUE;
+        return true;
       }
 
       // Check for selector match
