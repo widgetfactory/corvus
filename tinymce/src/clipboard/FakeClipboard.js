@@ -20,6 +20,8 @@ var clipboardData = {
 
 clipboardData[internalHtmlMimeType] = '';
 
+var clipboardTimestamp = 0;
+
 function hasData() {
     return !!clipboardData['text/html'] || !!clipboardData['text/plain'] || !!clipboardData[internalHtmlMimeType];
 }
@@ -28,15 +30,17 @@ function getData(mimetype) {
     if (mimetype) {
         return clipboardData[mimetype] || null;
     }
-    
+
     return clipboardData;
 }
 
+function getTimestamp() {
+    return clipboardTimestamp;
+}
+
 function setData(mimetype, content) {
-    clipboardData[mimetype] = {
-        timestamp: Date.now(),
-        content: content
-    };
+    clipboardData[mimetype] = content;
+    clipboardTimestamp = Date.now();
 }
 
 function clearData() {
@@ -46,11 +50,13 @@ function clearData() {
     };
 
     clipboardData[internalHtmlMimeType] = '';
+    clipboardTimestamp = 0;
 }
 
 export {
     hasData,
     getData,
+    getTimestamp,
     setData,
     clearData
 };

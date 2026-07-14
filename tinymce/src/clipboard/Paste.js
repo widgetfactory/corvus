@@ -176,15 +176,13 @@ function getClipboardContent(editor, clipboardEvent) {
     
     if (FakeClipboard.hasData()) {
         var data = FakeClipboard.getData();
-
-        if (data.timeStamp && data.timeStamp > eventTimestamp) {
-            content = data.content;
-
-            FakeClipboard.clearData();
-            return content;
-        }
+        var timestamp = FakeClipboard.getTimestamp();
 
         FakeClipboard.clearData();
+
+        if (timestamp && timestamp > eventTimestamp) {
+            return data;
+        }
     }
     
     var content = Utils.getDataTransferItems(clipboardEvent.clipboardData || clipboardEvent.dataTransfer || editor.getDoc().dataTransfer);
@@ -673,15 +671,7 @@ var setup = function (editor, pasteBin) {
 
     editor.addCommand('mcePasteFakeClipboard', function (ui, e) {
         var data = FakeClipboard.getData();
-
-        var content = data.content || '';
-
-        // If the content is empty, we don't need to do anything
-        if (!content) {
-            return;
-        }
-
-        insertClipboardContent(editor, content, true, e.isPlainText === true);
+        insertClipboardContent(editor, data, true, e.isPlainText === true);
     });
 };
 
