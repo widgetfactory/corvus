@@ -882,7 +882,9 @@
 	};
 
 	Sizzle.error = function (msg) {
-		throw new Error("Syntax error, unrecognized expression: " + msg);
+		var e = new Error("Syntax error, unrecognized expression: " + msg);
+		e.sizzleSyntaxError = true;
+		throw e;
 	};
 
 	/**

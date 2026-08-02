@@ -392,8 +392,17 @@
     select: function (selector, scope) {
       var self = this;
 
-      /*eslint new-cap:0 */
-      return tinymce.dom.Sizzle(selector, self.get(scope) || self.get(self.settings.root_element) || self.doc, []);
+      try {
+        /*eslint new-cap:0 */
+        return tinymce.dom.Sizzle(selector, self.get(scope) || self.get(self.settings.root_element) || self.doc, []);
+      } catch (e) {
+        // An invalid selector matches nothing, but let real errors surface
+        if (e.sizzleSyntaxError) {
+          return [];
+        }
+
+        throw e;
+      }
     },
 
     unique: function (arr) {
@@ -408,15 +417,30 @@
      * @param {String} selector CSS pattern to match the element agains.
      */
     is: function (elm, selector) {
-      var i;
+      var i, elms;
 
-      // If it isn't an array then try to do some simple selectors instead of Sizzle for to boost performance
-      if (elm.length === undefined) {
-        // Simple all selector
-        if (selector === '*') {
+      if (!elm) {
+        return false;
+      }
+
+      // Simple all selector. Sizzle matches "*" against anything in a seed, including
+      // non elements, so handle nodes and collections here instead
+      if (selector === '*') {
+        if (elm.nodeType) {
           return elm.nodeType == 1;
         }
 
+        for (i = 0; i < elm.length; i++) {
+          if (elm[i].nodeType == 1) {
+            return true;
+          }
+        }
+
+        return false;
+      }
+
+      // If it isn't an array then try to do some simple selectors instead of Sizzle for to boost performance
+      if (elm.length === undefined) {
         // Simple selector just elements
         if (simpleSelectorRe.test(selector)) {
           selector = selector.toLowerCase().split(/,/);
@@ -437,10 +461,23 @@
         return false;
       }
 
-      var elms = elm.nodeType ? [elm] : elm;
+      elms = elm.nodeType ? [elm] : elm;
 
-      /*eslint new-cap:0 */
-      return tinymce.dom.Sizzle(selector, elms[0].ownerDocument || elms[0], null, elms).length > 0;
+      // An empty collection matches nothing
+      if (!elms.length) {
+        return false;
+      }
+
+      try {
+        /*eslint new-cap:0 */
+        return tinymce.dom.Sizzle(selector, elms[0].ownerDocument || elms[0], null, elms).length > 0;
+      } catch (e) {
+        if (e.sizzleSyntaxError) {
+          return false;
+        }
+
+        throw e;
+      }
     },
 
     closest: function (n, selector) {
