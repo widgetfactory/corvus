@@ -404,6 +404,10 @@
       CaretContainerRemove.remove(node.nextSibling);
       editor.dom.remove(node);
 
+      // The node backing the fake selection is gone, drop the offscreen container with it. This
+      // cannot be left to onAfterSetSelectionRange since a null range below never sets a selection.
+      removeContentEditableSelection();
+
       if (editor.dom.isEmpty(editor.getBody())) {
         editor.setContent('');
         editor.focus();
@@ -818,7 +822,8 @@
 
         if (selectedContentEditableNode) {
           if (!selectedContentEditableNode.parentNode) {
-            selectedContentEditableNode = null;
+            // The selected node was removed from the DOM, clean up the offscreen container as well
+            removeContentEditableSelection();
             return;
           }
 
@@ -1013,15 +1018,17 @@
     function removeContentEditableSelection() {
       if (selectedContentEditableNode) {
         selectedContentEditableNode.removeAttribute('data-mce-selected');
-        editor.dom.remove(realSelectionId);
-
         selectedContentEditableNode = null;
       }
+
+      // Always remove the offscreen container, the selected node reference can be
+      // cleared or become detached while the container is still in the DOM
+      editor.dom.remove(realSelectionId);
     }
 
     function destroy() {
       fakeCaret.destroy();
-      selectedContentEditableNode = null;
+      removeContentEditableSelection();
     }
 
     function hideFakeCaret() {
