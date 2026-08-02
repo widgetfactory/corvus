@@ -37,7 +37,6 @@ import './src/html/FilterNode.js';
 import './src/html/InvalidNodes.js';
 import './src/html/Sanitizer.js';
 import './src/html/DomParser.js';
-import './src/html/NativeDomParser.js';
 import './src/html/Serializer.js';
 import './src/html/Writer.js';
 
