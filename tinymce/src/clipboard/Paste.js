@@ -172,21 +172,25 @@ function convertURLs(editor, content) {
  * @return {Object} Object with mime types and data for those mime types.
  */
 function getClipboardContent(editor, clipboardEvent) {
-    var eventTimestamp = clipboardEvent.timeStamp;
-    
+    var content = Utils.getDataTransferItems(clipboardEvent.clipboardData || clipboardEvent.dataTransfer || editor.getDoc().dataTransfer);
+
+    // The system clipboard is the source of truth. FakeClipboard is only a fallback for browsers
+    // that cannot expose clipboard data on paste (eg: iOS), otherwise content copied outside the
+    // editor would be replaced by the last content copied within it.
+    if (Utils.hasHtmlOrText(content) || 'Files' in content) {
+        // an external copy has replaced whatever was stored internally
+        FakeClipboard.clearData();
+
+        return content;
+    }
+
     if (FakeClipboard.hasData()) {
         var data = FakeClipboard.getData();
-        var timestamp = FakeClipboard.getTimestamp();
 
         FakeClipboard.clearData();
 
-        if (timestamp && timestamp > eventTimestamp) {
-            return data;
-        }
+        return data;
     }
-    
-    var content = Utils.getDataTransferItems(clipboardEvent.clipboardData || clipboardEvent.dataTransfer || editor.getDoc().dataTransfer);
-    //var content = getDataTransferItems(clipboardEvent.clipboardData || editor.getDoc().dataTransfer);
 
     return content;
 }
@@ -316,6 +320,15 @@ function pasteHtml(editor, content, internal, pasteAsPlainText) {
         // clean up extra whitespace
         if (editor.settings.paste_remove_whitespace) {
             o.content = o.content.replace(/(&nbsp;|\u00a0|\s| ){2,}/g, ' ');
+        }
+
+        // convert "smart" quotes and apostrophes to their straight equivalents
+        if (editor.settings.paste_convert_smart_quotes) {
+            o.content = o.content
+                // \u201c \u201d (U+201C/U+201D) -> "
+                .replace(/[\u201c\u201d]/g, '"')
+                // \u2018 \u2019 (U+2018/U+2019) -> '
+                .replace(/[\u2018\u2019]/g, "'");
         }
 
         // process regular expression
