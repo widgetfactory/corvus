@@ -105,6 +105,9 @@
 
     htmlParser = new tinymce.html.DomParser(settings, schema);
 
+    // this is the way out of the editor, so stored event attributes become handlers again
+    htmlParser.sanitizer.mode = 'restore';
+
     // Convert tabindex back to elements when serializing contents
     htmlParser.addAttributeFilter('data-mce-tabindex', function (nodes, name) {
       var i = nodes.length,

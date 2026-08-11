@@ -212,7 +212,10 @@
       var self = this,
         parser = new tinymce.html.DomParser(settings || self.settings, self.schema);
 
-      // Strip forged data-mce-src, data-mce-href and data-mce-style on input
+      // this content is on its way into the editor, so set sanitizer mode
+      parser.sanitizer.mode = 'store';
+
+      // Strip data-mce-src, data-mce-href and data-mce-style on input
       parser.addAttributeFilter('data-mce-src,data-mce-href,data-mce-style', function (nodes, name) {
         var i = nodes.length;
         while (i--) {

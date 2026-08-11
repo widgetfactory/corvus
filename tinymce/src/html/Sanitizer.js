@@ -39,9 +39,62 @@ import DOMPurify from "dompurify";
      * @param {tinymce.html.Schema} schema - HTML schema for validation.
      */
     tinymce.html.Sanitizer = function (settings, schema) {
+        var self = this;
+
         var special = schema.getSpecialElements();
 
         var uid = 0;
+
+        /**
+         * Direction of event attribute handling for this instance.
+         *
+         * "store"   - content entering the editor, so an event attribute is stored as data-mce-on*
+         *             and cannot run while editing
+         * "restore" - content leaving the editor, so a stored attribute becomes a handler again
+         * null      - neither, for content that is only being validated
+         *
+         * @property mode
+         * @type String
+         */
+        self.mode = null;
+
+        /**
+         * Moves event attributes between their live and stored names.
+         *
+         * A stored attribute arriving from outside is always dropped, as only the editor can
+         * produce one, so a forged or stale value can never become a handler on the way out.
+         *
+         * @param {Element} node Element to process.
+         */
+        function moveEventAttributes(node) {
+            if (!self.mode) {
+                return;
+            }
+
+            var attrs = node.attributes, i, name, tag = node.tagName.toLowerCase();
+
+            for (i = attrs.length - 1; i >= 0; i--) {
+                name = attrs[i].name.toLowerCase();
+
+                if (name.indexOf('data-mce-on') === 0) {
+                    if (self.mode === 'restore' && settings.allow_event_attributes) {
+                        node.setAttribute(name.substr(9), attrs[i].value);
+                    }
+
+                    node.removeAttribute(name);
+
+                    continue;
+                }
+
+                if (self.mode === 'store' && name.indexOf('on') === 0) {
+                    if (settings.allow_event_attributes && schema.isValid(tag, name)) {
+                        node.setAttribute('data-mce-' + name, attrs[i].value);
+                    }
+
+                    node.removeAttribute(name);
+                }
+            }
+        }
 
         function isBooleanAttribute(name) {
             var boolAttrMap = schema.getBoolAttrs();
@@ -67,7 +120,7 @@ import DOMPurify from "dompurify";
             }
 
             // Event handlers: only keep if allowed and defined in schema
-            if (/^on[a-z]+/i.test(attrName)) {
+            if (/^on[a-z]+/i.test(attrName) || attrName.indexOf('on') === 0) {
                 if (settings.allow_event_attributes && schema.isValid(tagName, attrName)) {
                     return true;
                 }
@@ -109,6 +162,9 @@ import DOMPurify from "dompurify";
             if (node.nodeType !== 1) {
                 return;
             }
+
+            // before any of the skips below, so internal nodes are covered too
+            moveEventAttributes(node);
 
             var tag = node.tagName.toLowerCase();
 

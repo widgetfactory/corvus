@@ -65,6 +65,15 @@
     var nativeParser = new DOMParser();
 
     /**
+     * Sanitizer used by this parser, exposed so the caller can set the direction of event
+     * attribute handling. See tinymce.html.Sanitizer#mode.
+     *
+     * @property sanitizer
+     * @type tinymce.html.Sanitizer
+     */
+    self.sanitizer = Sanitizer;
+
+    /**
      * Finds invalid children of a node according to the schema.
      * Populates the `invalids` array with nodes that are not allowed in their parent.
      *
