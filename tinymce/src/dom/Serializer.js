@@ -307,7 +307,8 @@
     htmlParser.addAttributeFilter(
       'data-mce-src,data-mce-href,data-mce-style,' +
       'data-mce-selected,data-mce-expando,data-mce-block,' +
-      'data-mce-type,data-mce-resize,data-mce-placeholder',
+      'data-mce-type,data-mce-resize,data-mce-placeholder,' +
+      'data-mce-contenteditable',
 
       function (nodes, name) {
         var i = nodes.length;
