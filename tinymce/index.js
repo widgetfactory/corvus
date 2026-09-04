@@ -74,7 +74,6 @@ import './src/TextPattern.js';
 // tinymce.clipboard.*
 import './src/clipboard/Clipboard.js';
 
-import './src/dom/Sizzle.js';
 import './src/dom/ScrollIntoView.js';
 import './src/dom/BookmarkManager.js';
 import './src/dom/ControlSelection.js';

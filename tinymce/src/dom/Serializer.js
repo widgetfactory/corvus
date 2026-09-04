@@ -396,7 +396,6 @@
         var clonedNode = node.cloneNode(true);
 
         // Nodes needs to be attached to something in WebKit/Opera
-        // This fix will make DOM ranges and make Sizzle happy!
         impl = document.implementation;
 
         if (impl.createHTMLDocument) {

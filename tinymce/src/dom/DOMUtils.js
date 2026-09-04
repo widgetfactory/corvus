@@ -15,8 +15,8 @@
     isWebKit = tinymce.isWebKit,
     isIE = tinymce.isIE,
     Entities = tinymce.html.Entities,
-    simpleSelectorRe = /^([a-z0-9],?)+$/i,
-    whiteSpaceRegExp = /^[ \t\r\n]*$/;
+    whiteSpaceRegExp = /^[ \t\r\n]*$/,
+    Arr = tinymce.util.Arr;
 
   function stringToArray(value) {
     if (Array.isArray(value)) {
@@ -28,6 +28,25 @@
     }
 
     return [];
+  }
+
+  // True if ANY element in `elms` matches `selector`
+  function matchesAny(selector, elms) {
+    var list = Arr.toArray(elms);
+
+    if (selector === '*') {
+      return list.some(function (el) {
+        return el && el.nodeType === 1;
+      });
+    }
+
+    try {
+      return list.some(function (el) {
+        return el && el.nodeType === 1 && el.matches(selector);
+      });
+    } catch (e) {
+      return false;
+    }
   }
 
   /**
@@ -375,11 +394,9 @@
 
     /**
      * Selects specific elements by a CSS level 3 pattern. For example "div#a1 p.test".
-     * This function is optimized for the most common patterns needed in TinyMCE but it also performes good enough
-     * on more complex patterns.
      *
      * @method select
-     * @param {String} selector CSS level 1 pattern to select/find elements by.
+     * @param {String} selector CSS pattern to select/find elements by.
      * @param {Object} scope Optional root element/scope element to search in.
      * @return {Array} Array with all matched elements.
      * @example
@@ -390,23 +407,46 @@
      * tinymce.activeEditor.dom.addClass(tinymce.activeEditor.dom.select('span.test'), 'someclass');
      */
     select: function (selector, scope) {
-      var self = this;
+      if (!selector) {
+        return [];
+      }
+
+      var sel = String(selector).trim();
+
+      if (!sel) {
+        return [];
+      }
+
+      var root = this.get(scope) || this.get(this.settings.root_element) || this.doc;
+      var ctx = (root && (root.nodeType === 1 || root.nodeType === 9 || root.nodeType === 11)) ?
+        root : this.doc;
 
       try {
-        /*eslint new-cap:0 */
-        return tinymce.dom.Sizzle(selector, self.get(scope) || self.get(self.settings.root_element) || self.doc, []);
+        return Array.from(ctx.querySelectorAll(':scope ' + sel));
       } catch (e) {
-        // An invalid selector matches nothing, but let real errors surface
-        if (e.sizzleSyntaxError) {
-          return [];
-        }
-
-        throw e;
+        // Invalid selector
+        return [];
       }
     },
 
-    unique: function (arr) {
-      return tinymce.dom.Sizzle.uniqueSort(arr);
+    unique: function (nodes) {
+      var seen = new Set();
+      var out = [];
+
+      for (var i = 0; i < nodes.length; i++) {
+        var n = nodes[i];
+
+        if (!seen.has(n)) {
+          seen.add(n);
+          out.push(n);
+        }
+      }
+
+      out.sort(function (a, b) {
+        return (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_PRECEDING) ? 1 : -1;
+      });
+
+      return out;
     },
 
     /**
@@ -414,70 +454,32 @@
      *
      * @method is
      * @param {Node/NodeList} elm DOM node to match or an array of nodes to match.
-     * @param {String} selector CSS pattern to match the element agains.
+     * @param {String} selector CSS pattern to match the element against.
      */
     is: function (elm, selector) {
-      var i, elms;
-
       if (!elm) {
         return false;
       }
 
-      // Simple all selector. Sizzle matches "*" against anything in a seed, including
-      // non elements, so handle nodes and collections here instead
-      if (selector === '*') {
-        if (elm.nodeType) {
-          return elm.nodeType == 1;
+      // Single element (not an array/collection)
+      if (!(typeof elm.length === 'number' && !elm.nodeType)) {
+        if (selector === '*') {
+          return elm.nodeType === 1;
         }
 
-        for (i = 0; i < elm.length; i++) {
-          if (elm[i].nodeType == 1) {
-            return true;
-          }
+        if (elm.nodeType !== 1) {
+          return false;
         }
 
-        return false;
-      }
-
-      // If it isn't an array then try to do some simple selectors instead of Sizzle for to boost performance
-      if (elm.length === undefined) {
-        // Simple selector just elements
-        if (simpleSelectorRe.test(selector)) {
-          selector = selector.toLowerCase().split(/,/);
-          elm = elm.nodeName.toLowerCase();
-
-          for (i = selector.length - 1; i >= 0; i--) {
-            if (selector[i] == elm) {
-              return true;
-            }
-          }
-
+        try {
+          return elm.matches(selector);
+        } catch (e) {
           return false;
         }
       }
 
-      // Is non element
-      if (elm.nodeType && elm.nodeType != 1) {
-        return false;
-      }
-
-      elms = elm.nodeType ? [elm] : elm;
-
-      // An empty collection matches nothing
-      if (!elms.length) {
-        return false;
-      }
-
-      try {
-        /*eslint new-cap:0 */
-        return tinymce.dom.Sizzle(selector, elms[0].ownerDocument || elms[0], null, elms).length > 0;
-      } catch (e) {
-        if (e.sizzleSyntaxError) {
-          return false;
-        }
-
-        throw e;
-      }
+      // Array/collection path
+      return matchesAny(selector, elm);
     },
 
     closest: function (n, selector) {
@@ -500,7 +502,11 @@
     },
 
     contains: function (context, elm) {
-      return tinymce.dom.Sizzle.contains(context, elm);
+      if (!context || !elm) {
+        return false;
+      }
+
+      return context.contains(elm);
     },
 
     // #endif
