@@ -421,8 +421,13 @@
       var ctx = (root && (root.nodeType === 1 || root.nodeType === 9 || root.nodeType === 11)) ?
         root : this.doc;
 
+      // scope each selector in a list, eg: "> td, > th"
+      var scoped = sel.split(',').map(function (value) {
+        return ':scope ' + value.trim();
+      }).join(',');
+
       try {
-        return Array.from(ctx.querySelectorAll(':scope ' + sel));
+        return Array.from(ctx.querySelectorAll(scoped));
       } catch (e) {
         // Invalid selector
         return [];
