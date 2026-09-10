@@ -598,9 +598,14 @@
     addUnload: function (f, s) {
       var unload;
 
-      unload = function () {
+      unload = function (e) {
         var li = self.unloads,
           o, n;
+
+        // the page may be restored from the back/forward cache, so leave everything intact
+        if (e && e.persisted) {
+          return;
+        }
 
         if (li) {
           // Call unload handlers
@@ -613,55 +618,12 @@
           }
 
           // Detach unload function
-          if (win.detachEvent) {
-            win.detachEvent('onbeforeunload', fakeUnload);
-            win.detachEvent('onunload', unload);
-          } else if (win.removeEventListener) {
-            win.removeEventListener('unload', unload, false);
-          }
+          win.removeEventListener('pagehide', unload);
 
           // Destroy references
           self.unloads = o = li = unload = 0;
-
-          // Run garbarge collector on IE
-          if (win.CollectGarbage) {
-            CollectGarbage();
-          }
         }
       };
-
-      function fakeUnload() {
-        var doc = document;
-
-        function stop() {
-          // Prevent memory leak
-          doc.detachEvent('onstop', stop);
-
-          // Call unload handler
-          if (unload) {
-            unload();
-          }
-
-          doc = 0;
-        }
-
-        // Is there things still loading, then do some magic
-        if (doc.readyState == 'interactive') {
-          // Fire unload when the currently loading page is stopped
-          if (doc) {
-            doc.attachEvent('onstop', stop);
-          }
-
-          // Remove onstop listener after a while to prevent the unload function
-          // to execute if the user presses cancel in an onbeforeunload
-          // confirm dialog and then presses the browser stop button
-          win.setTimeout(function () {
-            if (doc) {
-              doc.detachEvent('onstop', stop);
-            }
-          }, 0);
-        }
-      }
 
       f = {
         func: f,
@@ -669,13 +631,8 @@
       };
 
       if (!self.unloads) {
-        // Attach unload handler
-        if (win.attachEvent) {
-          win.attachEvent('onunload', unload);
-          win.attachEvent('onbeforeunload', fakeUnload);
-        } else if (win.addEventListener) {
-          win.addEventListener('unload', unload, false);
-        }
+        // "unload" is blocked by permissions policy in modern browsers
+        win.addEventListener('pagehide', unload);
 
         // Setup initial unload handler array
         self.unloads = [f];
