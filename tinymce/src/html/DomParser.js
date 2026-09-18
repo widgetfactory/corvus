@@ -456,7 +456,8 @@
 
         body = Sanitizer.sanitize(body, mimeType);
 
-        return isSpecialRoot ? body.firstChild : body;
+        // the sanitizer may have removed the wrapper, so fall back to the empty body
+        return isSpecialRoot ? (body.firstChild || body) : body;
       }
 
       /**
