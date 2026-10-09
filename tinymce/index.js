@@ -136,6 +136,7 @@ import './src/WindowManager.js';
 import './src/Formatter.js';
 import './src/LegacyInput.js';
 import './src/EnterKey.js';
+import './src/NormalizeSpace.js';
 
 import './src/DragDropOverrides.js';
 import './src/SelectionOverrides.js';

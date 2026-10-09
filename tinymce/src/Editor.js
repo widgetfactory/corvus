@@ -877,6 +877,8 @@
       self.forceBlocks = new tinymce.ForceBlocks(self);
       self.enterKey = new tinymce.EnterKey(self);
       // internal with no external interface
+      self._normalizeSpace = new tinymce.NormalizeSpace(self);
+      // internal with no external interface
       self._nodeChangeDispatcher = new tinymce.NodeChange(self);
       self.editorCommands = new tinymce.EditorCommands(self);
       // internal with no external interface
