@@ -67,6 +67,15 @@
         return container[siblingName] && container[siblingName].nodeType == 3;
       }
 
+      // collapse into a plain space already beside the caret
+      if (container.nodeType == 3 && container.data[offset - 1] === ' ') {
+        html = html.replace(/^ /, '');
+      }
+
+      if (rng.endContainer.nodeType == 3 && rng.endContainer.data[rng.endOffset] === ' ') {
+        html = html.replace(/ $/, '');
+      }
+
       if (container.nodeType == 3) {
         if (offset > 0) {
           html = html.replace(/^&nbsp;/, ' ');

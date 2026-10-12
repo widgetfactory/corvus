@@ -262,7 +262,10 @@ function sanitizePastedHTML(editor, html) {
         });
     }
 
-    var fragment = parser.parse(html, { forced_root_block: false, isRootContent: true });
+    // trim edge newlines only, isRootContent would also strip a leading or trailing space from inline content
+    html = html.replace(/^[\r\n\t]+|[\r\n\t]+$/g, '');
+
+    var fragment = parser.parse(html, { forced_root_block: false });
 
     return new Serializer({ validate: editor.settings.validate }, editor.schema).serialize(fragment);
 }

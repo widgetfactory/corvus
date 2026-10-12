@@ -126,7 +126,9 @@
     // Add onBeforeSetContent with cleanup
     self.onBeforeSetContent.add(function (e, args) {
       if (args.format !== 'raw') {
-        var node = editor.createParser().parse(args.content, extend(args, { isRootContent: true, forced_root_block: false }));
+        // trim edge newlines only, isRootContent would also strip a leading or trailing space from inline content
+        var html = args.content.replace(/^[\r\n\t]+|[\r\n\t]+$/g, '');
+        var node = editor.createParser().parse(html, extend(args, { forced_root_block: false }));
         args.content = new tinymce.html.Serializer({ validate: false }, editor.schema).serialize(node);
       }
     });
