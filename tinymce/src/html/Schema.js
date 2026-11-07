@@ -377,6 +377,13 @@
     // Caption can't have tables
     delete schema.caption.children.table;
 
+    // HTML5 allows a div to wrap dt/dd groups in a dl
+    if (type != "html4") {
+      schema.dl.children.div = {};
+      schema.div.children.dt = {};
+      schema.div.children.dd = {};
+    }
+
     // TODO: LI:s can only have value if parent is OL
 
     // TODO: Handle transparent elements
